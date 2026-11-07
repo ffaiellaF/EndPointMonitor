@@ -87,7 +87,6 @@ async function getAuthToken(loginUrl, loginBody) {
 
   try {
     loginRequestCount++;
-    console.log(`[LOGIN] Body enviado a ${loginUrl}:`, JSON.stringify(loginBody, null, 2));
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT);
     
@@ -97,7 +96,6 @@ async function getAuthToken(loginUrl, loginBody) {
       body: JSON.stringify(loginBody),
       signal: controller.signal
     });
-    console.log("BODYYY: "+response.body);
     clearTimeout(timeout);
 
     if (!response.ok) {

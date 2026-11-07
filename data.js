@@ -13,12 +13,18 @@ const CONTRATO_ADMIN_WEB = process.env.CONTRATO_ADMIN_WEB || '242383';
 const EMAIL_ADMIN_WEB = process.env.EMAIL_ADMIN_WEB || 'msprovart8@gmail.com';
 const CUIT_ADMIN_WEB = process.env.CUIT_ADMIN_WEB || '20389467575';
 
+const IDUSUARIO_A = process.env.IDUSUARIO_A || '923664';
+const CONTRATO_USUARIO_A = process.env.CONTRATO_USUARIO_A || '242383';
+const EMAIL_A = process.env.EMAIL_A || 'msprovart8@gmail.com';
+const CUIT_A = process.env.CUIT_A || '20389467575';
+
 // Usar variables de entorno para rutas de endpoints
 const ENDPOINT_CARGO_PATH = process.env.ENDPOINT_CARGO_PATH || '/core/organization/v1/parametros/cargo';
 const ENDPOINT_AREA_PATH = process.env.ENDPOINT_AREA_PATH || '/core/organization/v1/parametros/area';
 const ENDPOINT_USUARIOS_PATH = process.env.ENDPOINT_USUARIOS_PATH || '/atencion-al-cliente/administracion-usuario/v2/usuarios';
 const ENDPOINT_SOLICITUDES_PATH = process.env.ENDPOINT_SOLICITUDES_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes';
 const ENDPOINT_MOTIVOS_RECHAZO_PATH = process.env.ENDPOINT_MOTIVOS_RECHAZO_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes/motivos-rechazo';
+const ENDPOINT_FUNCIONALIDADES_PATH = process.env.ENDPOINT_FUNCIONALIDADES_PATH || '/atencion-al-cliente/administracion-usuario/v2/funcionalidades';
 
 const endpoints = [
   {
@@ -163,6 +169,26 @@ const endpoints = [
         "contrato": Number(CONTRATO_ADMIN_WEB),
         "email": String(EMAIL_ADMIN_WEB),
         "cuit": String(CUIT_ADMIN_WEB)
+      }
+    },
+    "expectedStatus": [200]
+  },
+  {
+    "id": "Consulta funcionalidades[Solapa Usuarios] - Usuario logueado ADMIN ART",
+    "description": "Consulta funcionalidades - Usuario logueado ADMIN ART",
+    "method": "GET",
+    "path": `${ENDPOINT_FUNCIONALIDADES_PATH}?contrato=${CONTRATO_USUARIO_A}&idUsuario=${IDUSUARIO_A}`,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_ART),
+        "contrato": Number(CONTRATO_ADMIN_ART),
+        "email": String(EMAIL_ADMIN_ART),
+        "cuit": String(CUIT_ADMIN_ART)
       }
     },
     "expectedStatus": [200]
