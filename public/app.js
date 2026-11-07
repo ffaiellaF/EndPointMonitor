@@ -1,6 +1,29 @@
 const $ = id => document.getElementById(id);
 let intervalMs = 30000;
 let countdown = 0;
+let alarmEnabled = false;
+let lastKnownRun = null;
+let alarmPlayedFor = new Set();
+
+function playAlarm() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.6);
+  } catch (e) {}
+}
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pretty = value => value == null ? '—' : (typeof value === 'string' ? value : JSON.stringify(value, null, 2));
 function fmtDate(value){if(!value)return '—';return new Date(value).toLocaleString('es-AR');}
@@ -14,9 +37,24 @@ function render(data){
   intervalMs = data.intervalMs || intervalMs;
   $('baseUrl').textContent = `URL base: ${data.baseUrl || 'No configurada'}`;
   const results = data.results || [];
+  const downEndpoints = results.filter(x=>x.state==='DOWN');
   $('total').textContent = results.length;
   $('up').textContent = results.filter(x=>x.state==='UP').length;
-  $('down').textContent = results.filter(x=>x.state==='DOWN').length;
+  $('down').textContent = downEndpoints.length;
+  if (alarmEnabled) {
+    downEndpoints.forEach(ep => {
+      if (!alarmPlayedFor.has(ep.id)) {
+        playAlarm();
+        alarmPlayedFor.add(ep.id);
+      }
+    });
+    alarmPlayedFor.forEach(id => {
+      if (!downEndpoints.some(ep => ep.id === id)) {
+        alarmPlayedFor.delete(id);
+      }
+    });
+  }
+  if (data.lastRun) lastKnownRun = data.lastRun;
   $('lastRun').textContent = fmtDate(data.lastRun);
   $('configError').textContent = data.configError || '';
   $('configError').classList.toggle('hidden', !data.configError);
@@ -44,4 +82,5 @@ function render(data){
 function toggleDetails(id, head){const el=$(id);el.hidden=!el.hidden;head.setAttribute('aria-expanded',String(!el.hidden));}
 async function load(){try{const res=await fetch('/api/status');render(await res.json());}catch(e){$('configError').textContent='No se pudo conectar con el servidor del monitor.';$('configError').classList.remove('hidden');}}
 $('refresh').addEventListener('click',async()=>{const b=$('refresh');b.disabled=true;b.textContent='Consultando…';try{const res=await fetch('/api/check',{method:'POST'});render(await res.json());}finally{b.disabled=false;b.textContent='↻ Ejecutar ahora';}});
+$('alarmToggle').addEventListener('click',()=>{alarmEnabled=!alarmEnabled;const b=$('alarmToggle');b.textContent=alarmEnabled?'🔔 Alarma ON':'🔕 Alarma OFF';b.classList.toggle('active',alarmEnabled);});
 load();setInterval(load,5000);
