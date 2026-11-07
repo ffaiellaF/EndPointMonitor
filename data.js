@@ -25,6 +25,7 @@ const endpoints = [
     "description": "Consulta los cargos disponibles",
     "method": "GET",
     "path": ENDPOINT_CARGO_PATH,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json"
     },
@@ -35,6 +36,7 @@ const endpoints = [
     "description": "Consulta las áreas disponibles",
     "method": "GET",
     "path": ENDPOINT_AREA_PATH,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json"
     },
@@ -45,6 +47,7 @@ const endpoints = [
     "description": "Consulta usuarios - Usuario logueado ADMIN ART",
     "method": "GET",
     "path": `${ENDPOINT_USUARIOS_PATH}?idUsuario=${IDUSUARIO_ADMIN_ART}`,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json",
       "Consumidor": "CLIENTES"
@@ -65,6 +68,7 @@ const endpoints = [
     "description": "Consulta usuarios - Usuario logueado ADMIN WEB",
     "method": "GET",
     "path": `${ENDPOINT_USUARIOS_PATH}?idUsuario=${IDUSUARIO_ADMIN_WEB}`,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json",
       "Consumidor": "CLIENTES"
@@ -85,6 +89,7 @@ const endpoints = [
     "description": "Consulta solicitudes - Usuario logueado ADMIN ART",
     "method": "GET",
     "path": `${ENDPOINT_SOLICITUDES_PATH}?idUsuario=${IDUSUARIO_ADMIN_ART}`,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json",
       "Consumidor": "CLIENTES"
@@ -105,6 +110,7 @@ const endpoints = [
     "description": "Consulta solicitudes - Usuario logueado ADMIN WEB",
     "method": "GET",
     "path": `${ENDPOINT_SOLICITUDES_PATH}?idUsuario=${IDUSUARIO_ADMIN_WEB}`,
+    "useBaseUrl": true,
     "headers": {
       "Accept": "application/json",
       "Consumidor": "CLIENTES"
@@ -117,6 +123,18 @@ const endpoints = [
         "email": String(EMAIL_ADMIN_WEB),
         "cuit": String(CUIT_ADMIN_WEB)
       }
+    },
+    "expectedStatus": [200]
+  },
+  {
+    "id": "SERVIDOR FEDE",
+    "description": "Consulta solicitudes - Usuario logueado ADMIN WEB",
+    "method": "GET",
+    "path": `http://localhost:3001/hora`,
+    "useBaseUrl": false,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
     },
     "expectedStatus": [200]
   }

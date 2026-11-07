@@ -35,7 +35,10 @@ function loadEndpoints() {
     if (!ep.path || !ep.method) throw new Error(`El endpoint en la posición ${i} necesita path y method.`);
     const method = String(ep.method).toUpperCase();
     if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method)) throw new Error(`Método no permitido en ${ep.id || i}: ${method}`);
-    const url = new URL(String(ep.path).replace(/^\/+/, ''), BASE_URL + '/').toString();
+    const useBaseUrl = ep.useBaseUrl !== false;
+    const url = useBaseUrl
+      ? new URL(String(ep.path).replace(/^\/+/ , ''), BASE_URL + '/').toString()
+      : String(ep.path);
     
     // Procesar configuración de autenticación si existe
     let authConfig = null;
