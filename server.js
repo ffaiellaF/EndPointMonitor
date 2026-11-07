@@ -11,6 +11,11 @@ const BASE_URL = (process.env.BASE_URL || '').trim().replace(/\/+$/, '');
 const INTERVAL = Math.max(5000, Number(process.env.POLL_INTERVAL_MS || 30000));
 const TIMEOUT = Math.max(1000, Number(process.env.REQUEST_TIMEOUT_MS || 15000));
 
+
+// Cache de tokens por endpoint (clave: loginUrl + JSON.stringify(loginBody))
+const tokenCache = new Map();
+let loginRequestCount = 0;
+
 function expandEnv(value) {
   if (typeof value === 'string') {
     return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, key) => process.env[key] || '');
@@ -33,6 +38,16 @@ function loadEndpoints() {
     const method = String(ep.method).toUpperCase();
     if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method)) throw new Error(`Método no permitido en ${ep.id || i}: ${method}`);
     const url = new URL(String(ep.path).replace(/^\/+/, ''), BASE_URL + '/').toString();
+    
+    // Procesar configuración de autenticación si existe
+    let authConfig = null;
+    if (ep.auth && ep.auth.loginUrl && ep.auth.loginBody) {
+      authConfig = {
+        loginUrl: expandEnv(ep.auth.loginUrl),
+        loginBody: expandEnv(ep.auth.loginBody)
+      };
+    }
+    
     return {
       id: String(ep.id || `endpoint-${i + 1}`),
       description: String(ep.description || 'Sin descripción'),
@@ -40,14 +55,78 @@ function loadEndpoints() {
       url,
       headers: expandEnv(ep.headers || {}),
       body: ep.body === undefined ? undefined : expandEnv(ep.body),
-      expectedStatus: Array.isArray(ep.expectedStatus) ? ep.expectedStatus.map(Number) : [Number(ep.expectedStatus || 200)]
+      expectedStatus: Array.isArray(ep.expectedStatus) ? ep.expectedStatus.map(Number) : [Number(ep.expectedStatus || 200)],
+      auth: authConfig
     };
   });
 }
 
 function maskHeaders(headers) {
-  const sensitive = /authorization|token|api[-_]?key|secret|cookie/i;
+  // Solo enmascarar headers sensibles excepto Authorization (para debug)
+  const sensitive = /token|api[-_]?key|secret|cookie/i;
   return Object.fromEntries(Object.entries(headers || {}).map(([key, value]) => [key, sensitive.test(key) ? (value ? '•••••••• (oculto)' : '') : String(value)]));
+}
+
+function getCacheKey(loginUrl, loginBody) {
+  return `${loginUrl}::${JSON.stringify(loginBody)}`;
+}
+
+async function getAuthToken(loginUrl, loginBody) {
+  const cacheKey = getCacheKey(loginUrl, loginBody);
+  const cached = tokenCache.get(cacheKey);
+  
+  // Si hay tokens válidos en caché, usarlos
+  if (cached && cached.accessToken && cached.redirectToken && cached.expiry && Date.now() < cached.expiry) {
+    return { accessToken: cached.accessToken, redirectToken: cached.redirectToken };
+  }
+
+  try {
+    loginRequestCount++;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+    
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginBody),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error(`Error en login (${loginUrl}): ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // Extraer access_token para el header Authorization
+    const accessToken = data.token?.access_token || data.access_token || data.ACCESS_TOKEN;
+    // Extraer redirectToken (UUID) para la cookie userToken
+    const redirectToken = data.redirectToken;
+    
+    if (!accessToken || !redirectToken) {
+      console.error('No se encontró access_token o redirectToken en la respuesta del login');
+      return null;
+    }
+
+    // Guardar ambos tokens y calcular expiración
+    const expiresIn = data.token?.expires_in || 25200; // segundos (7 horas)
+    const expiry = Date.now() + (expiresIn * 1000) - 60000; // 1 minuto de margen
+    
+    // Guardar objeto con ambos tokens
+    tokenCache.set(cacheKey, {
+      accessToken,
+      redirectToken,
+      expiry
+    });
+    
+    return { accessToken, redirectToken };
+  } catch (error) {
+    console.error('Error obteniendo token de autenticación:', error.message);
+    return null;
+  }
 }
 
 async function readResponse(response) {
@@ -64,6 +143,26 @@ async function checkEndpoint(ep) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT);
   const requestHeaders = { ...ep.headers };
+  
+  // Si el endpoint tiene configuración de autenticación, obtener y agregar los tokens
+  if (ep.auth) {
+    const tokens = await getAuthToken(ep.auth.loginUrl, ep.auth.loginBody);
+    if (tokens && tokens.accessToken && tokens.redirectToken) {
+      requestHeaders['Authorization'] = `Bearer ${tokens.accessToken}`;
+      // Agregar cookie userToken con el redirectToken (UUID)
+      requestHeaders['Cookie'] = `userToken=${tokens.redirectToken}`;
+    } else {
+      return {
+        id: ep.id, description: ep.description, method: ep.method, url: ep.url,
+        status: null, statusText: 'Error de autenticación',
+        ok: false, state: 'DOWN', durationMs: 0, checkedAt: new Date().toISOString(),
+        error: `No se pudo obtener el token de autenticación desde ${ep.auth.loginUrl}. Verifique la configuración de auth en el endpoint.`,
+        request: { headers: maskHeaders(requestHeaders), body: null },
+        response: { headers: {}, body: '' }, expectedStatus: ep.expectedStatus
+      };
+    }
+  }
+  
   const options = { method: ep.method, headers: requestHeaders, signal: controller.signal };
   if (ep.body !== undefined && !['GET', 'HEAD'].includes(ep.method)) {
     options.body = typeof ep.body === 'string' ? ep.body : JSON.stringify(ep.body);
