@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const { endpoints } = require('./data');
 
 const app = express();
 app.use(express.json());
@@ -29,11 +30,8 @@ function expandEnv(value) {
 
 function loadEndpoints() {
   if (!BASE_URL) throw new Error('Falta configurar BASE_URL en el archivo .env');
-  let parsed;
-  try { parsed = JSON.parse(process.env.ENDPOINTS_JSON || '[]'); }
-  catch (e) { throw new Error(`ENDPOINTS_JSON no es un JSON válido: ${e.message}`); }
-  if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('ENDPOINTS_JSON debe ser un array con al menos un endpoint.');
-  return parsed.map((ep, i) => {
+  if (!Array.isArray(endpoints) || endpoints.length === 0) throw new Error('El array de endpoints debe contener al menos un endpoint.');
+  return endpoints.map((ep, i) => {
     if (!ep.path || !ep.method) throw new Error(`El endpoint en la posición ${i} necesita path y method.`);
     const method = String(ep.method).toUpperCase();
     if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method)) throw new Error(`Método no permitido en ${ep.id || i}: ${method}`);
@@ -41,11 +39,15 @@ function loadEndpoints() {
     
     // Procesar configuración de autenticación si existe
     let authConfig = null;
-    if (ep.auth && ep.auth.loginUrl && ep.auth.loginBody) {
-      authConfig = {
-        loginUrl: expandEnv(ep.auth.loginUrl),
-        loginBody: expandEnv(ep.auth.loginBody)
-      };
+    if (ep.auth && ep.auth.loginBody) {
+      // Usar AUTH_LOGIN_URL del .env o el loginUrl del endpoint si está definido
+      const loginUrl = ep.auth.loginUrl || process.env.AUTH_LOGIN_URL;
+      if (loginUrl) {
+        authConfig = {
+          loginUrl: expandEnv(loginUrl),
+          loginBody: expandEnv(ep.auth.loginBody)
+        };
+      }
     }
     
     return {
@@ -82,6 +84,7 @@ async function getAuthToken(loginUrl, loginBody) {
 
   try {
     loginRequestCount++;
+    console.log(`[LOGIN] Body enviado a ${loginUrl}:`, JSON.stringify(loginBody, null, 2));
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT);
     
@@ -91,7 +94,7 @@ async function getAuthToken(loginUrl, loginBody) {
       body: JSON.stringify(loginBody),
       signal: controller.signal
     });
-    
+    console.log("BODYYY: "+response.body);
     clearTimeout(timeout);
 
     if (!response.ok) {
