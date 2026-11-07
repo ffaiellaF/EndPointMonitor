@@ -18,6 +18,7 @@ const ENDPOINT_CARGO_PATH = process.env.ENDPOINT_CARGO_PATH || '/core/organizati
 const ENDPOINT_AREA_PATH = process.env.ENDPOINT_AREA_PATH || '/core/organization/v1/parametros/area';
 const ENDPOINT_USUARIOS_PATH = process.env.ENDPOINT_USUARIOS_PATH || '/atencion-al-cliente/administracion-usuario/v2/usuarios';
 const ENDPOINT_SOLICITUDES_PATH = process.env.ENDPOINT_SOLICITUDES_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes';
+const ENDPOINT_MOTIVOS_RECHAZO_PATH = process.env.ENDPOINT_MOTIVOS_RECHAZO_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes/motivos-rechazo';
 
 const endpoints = [
   {
@@ -117,6 +118,46 @@ const endpoints = [
     },
     "auth": {
       // loginUrl se construye usando AUTH_LOGIN_URL del .env
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_WEB),
+        "contrato": Number(CONTRATO_ADMIN_WEB),
+        "email": String(EMAIL_ADMIN_WEB),
+        "cuit": String(CUIT_ADMIN_WEB)
+      }
+    },
+    "expectedStatus": [200]
+  },
+  {
+    "id": "Consulta motivos de rechazo - Usuario logueado ADMIN ART",
+    "description": "Consulta motivos de rechazo - Usuario logueado ADMIN ART",
+    "method": "GET",
+    "path": ENDPOINT_MOTIVOS_RECHAZO_PATH,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_ART),
+        "contrato": Number(CONTRATO_ADMIN_ART),
+        "email": String(EMAIL_ADMIN_ART),
+        "cuit": String(CUIT_ADMIN_ART)
+      }
+    },
+    "expectedStatus": [200]
+  },
+  {
+    "id": "Consulta motivos de rechazo - Usuario logueado ADMIN WEB",
+    "description": "Consulta motivos de rechazo - Usuario logueado ADMIN WEB",
+    "method": "GET",
+    "path": ENDPOINT_MOTIVOS_RECHAZO_PATH,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
       "loginBody": {
         "idUsuario": Number(IDUSUARIO_ADMIN_WEB),
         "contrato": Number(CONTRATO_ADMIN_WEB),
