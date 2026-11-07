@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Endpoint Monitor</title><link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar"><div><div class="eyebrow">MONITOREO DE SERVICIOS</div><h1>API Endpoint Monitor</h1><p id="baseUrl">Cargando configuración…</p></div><button id="refresh" class="refresh">↻ Ejecutar ahora</button></header>
+  <main>
+    <section class="stats">
+      <article class="stat"><span>Endpoints</span><strong id="total">—</strong></article>
+      <article class="stat"><span>Operativos</span><strong class="good" id="up">—</strong></article>
+      <article class="stat"><span>Con errores</span><strong class="bad" id="down">—</strong></article>
+      <article class="stat"><span>Última ejecución</span><strong class="small" id="lastRun">—</strong></article>
+    </section>
+    <div id="configError" class="alert hidden"></div>
+    <section class="section-heading"><div><h2>Endpoints configurados</h2><p>Seleccioná un endpoint para ver el detalle de la petición y su respuesta.</p></div><span id="nextRun" class="muted"></span></section>
+    <section id="endpointList" class="endpoint-list"><div class="loading">Consultando endpoints…</div></section>
+    <footer>Los chequeos se ejecutan automáticamente según el intervalo configurado en <code>.env</code>.</footer>
+  </main>
+  <script src="/app.js"></script>
+</body></html>
