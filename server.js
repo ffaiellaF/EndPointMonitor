@@ -11,6 +11,7 @@ const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.BASE_URL || '').trim().replace(/\/+$/, '');
 const INTERVAL = Math.max(5000, Number(process.env.POLL_INTERVAL_MS || 30000));
 const TIMEOUT = Math.max(1000, Number(process.env.REQUEST_TIMEOUT_MS || 15000));
+const PROJECT_NAME = process.env.PROJECT_NAME || 'Proyecto';
 
 
 // Cache de tokens por endpoint (clave: loginUrl + JSON.stringify(loginBody))
@@ -217,7 +218,7 @@ async function runChecks() {
 
 app.get('/api/status', async (_req, res) => {
   if (!lastRun && !configError) await runChecks();
-  res.json({ baseUrl: BASE_URL, intervalMs: INTERVAL, lastRun, running, configError, results: latest });
+  res.json({ baseUrl: BASE_URL, intervalMs: INTERVAL, lastRun, running, configError, results: latest, projectName: PROJECT_NAME });
 });
 
 app.post('/api/check', async (_req, res) => {
