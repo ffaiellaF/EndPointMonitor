@@ -29,7 +29,7 @@ const ENDPOINT_FUNCIONALIDADES_PATH = process.env.ENDPOINT_FUNCIONALIDADES_PATH 
 const endpoints = [
   {
     "id": "Consulta los cargos disponibles",
-    "description": "Consulta los cargos disponibles",
+    "description": "Cargos disponibles",
     "method": "GET",
     "path": ENDPOINT_CARGO_PATH,
     "useBaseUrl": true,
