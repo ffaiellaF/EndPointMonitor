@@ -40,7 +40,7 @@ const endpoints = [
   },
   {
     "id": "Consulta las áreas disponibles",
-    "description": "Consulta las áreas disponibles",
+    "description": "Áreas disponibles",
     "method": "GET",
     "path": ENDPOINT_AREA_PATH,
     "useBaseUrl": true,
