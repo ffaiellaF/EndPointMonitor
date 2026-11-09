@@ -33,8 +33,12 @@ function render(data){
   document.querySelectorAll('.details:not([hidden])').forEach(el => {
     openDetails.add(el.id);
   });
-  
+
   intervalMs = data.intervalMs || intervalMs;
+  const projectName = data.projectName || 'Proyecto';
+  document.title = `${projectName} - Monitoreo`;
+  $('projectName').textContent = projectName;
+  $('eyebrow').textContent = `MONITOREO DE SERVICIOS · ${projectName.toUpperCase()}`;
   $('baseUrl').textContent = `URL base: ${data.baseUrl || 'No configurada'}`;
   const results = data.results || [];
   const downEndpoints = results.filter(x=>x.state==='DOWN');
