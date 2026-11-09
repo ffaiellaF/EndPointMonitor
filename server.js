@@ -203,8 +203,10 @@ let latest = [];
 let lastRun = null;
 let running = false;
 let configError = null;
+let monitoringEnabled = false;
 
-async function runChecks() {
+async function runChecks(force = false) {
+  if (!force && !monitoringEnabled) return;
   if (running) return;
   running = true;
   try {
@@ -217,17 +219,27 @@ async function runChecks() {
 }
 
 app.get('/api/status', async (_req, res) => {
-  if (!lastRun && !configError) await runChecks();
-  res.json({ baseUrl: BASE_URL, intervalMs: INTERVAL, lastRun, running, configError, results: latest, projectName: PROJECT_NAME });
+  res.json({ baseUrl: BASE_URL, intervalMs: INTERVAL, lastRun, running, configError, results: latest, projectName: PROJECT_NAME, monitoringEnabled });
 });
 
 app.post('/api/check', async (_req, res) => {
-  await runChecks();
+  await runChecks(true);
   res.json({ lastRun, configError, results: latest });
+});
+
+app.post('/api/monitoring/toggle', async (_req, res) => {
+  monitoringEnabled = !monitoringEnabled;
+  if (monitoringEnabled) {
+    await runChecks(true);
+  } else {
+    latest = [];
+    lastRun = null;
+    configError = null;
+  }
+  res.json({ monitoringEnabled, lastRun, configError, results: latest });
 });
 
 app.listen(PORT, async () => {
   console.log(`API Endpoint Monitor disponible en http://localhost:${PORT}`);
-  await runChecks();
-  setInterval(runChecks, INTERVAL);
+  setInterval(() => runChecks(), INTERVAL);
 });

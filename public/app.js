@@ -2,6 +2,7 @@ const $ = id => document.getElementById(id);
 let intervalMs = 30000;
 let countdown = 0;
 let alarmEnabled = false;
+let monitoringEnabled = false;
 let lastKnownRun = null;
 let alarmPlayedFor = new Set();
 
@@ -40,6 +41,30 @@ function render(data){
   $('projectName').textContent = projectName;
   $('eyebrow').textContent = `MONITOREO DE SERVICIOS · ${projectName.toUpperCase()}`;
   $('baseUrl').textContent = `URL base: ${data.baseUrl || 'No configurada'}`;
+
+  monitoringEnabled = data.monitoringEnabled;
+  const monitorBtn = $('monitorToggle');
+  monitorBtn.textContent = monitoringEnabled ? '⏹ Detener monitoreo' : '▶ Iniciar monitoreo';
+  monitorBtn.classList.toggle('active', monitoringEnabled);
+
+  if (!monitoringEnabled) {
+    $('statsSection').classList.add('hidden');
+    $('sectionHeading').classList.add('hidden');
+    $('monitorFooter').classList.add('hidden');
+    $('endpointList').innerHTML = '<div class="loading">El monitoreo está detenido. Presioná "Iniciar monitoreo" para comenzar.</div>';
+    $('total').textContent = '—';
+    $('up').textContent = '—';
+    $('down').textContent = '—';
+    $('lastRun').textContent = '—';
+    $('nextRun').textContent = '';
+    alarmPlayedFor.clear();
+    return;
+  }
+
+  $('statsSection').classList.remove('hidden');
+  $('sectionHeading').classList.remove('hidden');
+  $('monitorFooter').classList.remove('hidden');
+
   const results = data.results || [];
   const downEndpoints = results.filter(x=>x.state==='DOWN');
   $('total').textContent = results.length;
@@ -63,7 +88,7 @@ function render(data){
   $('configError').textContent = data.configError || '';
   $('configError').classList.toggle('hidden', !data.configError);
   $('nextRun').textContent = `Actualización automática cada ${Math.round(intervalMs/1000)} segundos`;
-  if(!results.length){$('endpointList').innerHTML = '<div class="loading">No hay resultados para mostrar. Revisá la configuración del .env.</div>';return;}
+  if(!results.length){$('endpointList').innerHTML = '<div class="loading">Consultando endpoints…</div>';return;}
   $('endpointList').innerHTML = results.map((r,i)=>{
     const detailsId = `details-${i}`;
     const reqHeaders = pretty(r.request?.headers || {});
@@ -87,4 +112,5 @@ function toggleDetails(id, head){const el=$(id);el.hidden=!el.hidden;head.setAtt
 async function load(){try{const res=await fetch('/api/status');render(await res.json());}catch(e){$('configError').textContent='No se pudo conectar con el servidor del monitor.';$('configError').classList.remove('hidden');}}
 $('refresh').addEventListener('click',async()=>{const b=$('refresh');b.disabled=true;b.textContent='Consultando…';try{const res=await fetch('/api/check',{method:'POST'});render(await res.json());}finally{b.disabled=false;b.textContent='↻ Ejecutar ahora';}});
 $('alarmToggle').addEventListener('click',()=>{alarmEnabled=!alarmEnabled;const b=$('alarmToggle');b.textContent=alarmEnabled?'🔔 Alarma ON':'🔕 Alarma OFF';b.classList.toggle('active',alarmEnabled);});
+$('monitorToggle').addEventListener('click',async()=>{const b=$('monitorToggle');b.disabled=true;try{const res=await fetch('/api/monitoring/toggle',{method:'POST'});if(!res.ok) throw new Error('Error del servidor');render(await res.json());}catch(e){$('configError').textContent='No se pudo cambiar el estado del monitoreo.';$('configError').classList.remove('hidden');}finally{b.disabled=false;}});
 load();setInterval(load,5000);

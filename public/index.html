@@ -9,23 +9,27 @@
     .alarm-btn:hover{background:#5e2424}
     .alarm-btn.active{border-color:#2d6a3a;background:#1c4a24;color:#a3ffb3}
     .alarm-btn.active:hover{background:#245e2e}
+    .monitor-btn{border:1px solid #3a6a8b;background:#1c3a4a;color:#a3d4ff;border-radius:9px;padding:11px 16px;font-weight:650;cursor:pointer}
+    .monitor-btn:hover{background:#244a5e}
+    .monitor-btn.active{border-color:#2d6a3a;background:#1c4a24;color:#a3ffb3}
+    .monitor-btn.active:hover{background:#245e2e}
     .detail-block.request{border-left:3px solid #4a9eff;background:rgba(74,158,255,0.06)}
     .detail-block.response{border-left:3px solid #45d49a;background:rgba(69,212,154,0.06)}
   </style>
 </head>
 <body>
-  <header class="topbar"><div><div class="eyebrow" id="eyebrow">MONITOREO DE SERVICIOS</div><h1 id="projectName">Cargando…</h1><p id="baseUrl">Cargando configuración…</p></div><div class="topbar-actions"><button id="alarmToggle" class="alarm-btn">🔕 Alarma OFF</button><button id="refresh" class="refresh">↻ Ejecutar ahora</button></div></header>
+  <header class="topbar"><div><div class="eyebrow" id="eyebrow">MONITOREO DE SERVICIOS</div><h1 id="projectName">Cargando…</h1><p id="baseUrl">Cargando configuración…</p></div><div class="topbar-actions"><button id="monitorToggle" class="monitor-btn">▶ Iniciar monitoreo</button><button id="alarmToggle" class="alarm-btn">🔕 Alarma OFF</button><button id="refresh" class="refresh">↻ Ejecutar ahora</button></div></header>
   <main>
-    <section class="stats">
+    <section class="stats" id="statsSection">
       <article class="stat"><span>Endpoints</span><strong id="total">—</strong></article>
       <article class="stat"><span>Operativos</span><strong class="good" id="up">—</strong></article>
       <article class="stat"><span>Con errores</span><strong class="bad" id="down">—</strong></article>
       <article class="stat"><span>Última ejecución</span><strong class="small" id="lastRun">—</strong></article>
     </section>
     <div id="configError" class="alert hidden"></div>
-    <section class="section-heading"><div><h2>Endpoints configurados</h2><p>Seleccioná un endpoint para ver el detalle de la petición y su respuesta.</p></div><span id="nextRun" class="muted"></span></section>
-    <section id="endpointList" class="endpoint-list"><div class="loading">Consultando endpoints…</div></section>
-    <footer>Los chequeos se ejecutan automáticamente según el intervalo configurado en <code>.env</code>.</footer>
+    <section class="section-heading" id="sectionHeading"><div><h2>Endpoints configurados</h2><p>Seleccioná un endpoint para ver el detalle de la petición y su respuesta.</p></div><span id="nextRun" class="muted"></span></section>
+    <section id="endpointList" class="endpoint-list"><div class="loading">El monitoreo está detenido. Presioná "Iniciar monitoreo" para comenzar.</div></section>
+    <footer id="monitorFooter">Los chequeos se ejecutan automáticamente según el intervalo configurado en <code>.env</code>.</footer>
   </main>
   <script src="/app.js"></script>
 </body></html>
