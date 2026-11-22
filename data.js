@@ -26,6 +26,7 @@ const ENDPOINT_SOLICITUDES_PATH = process.env.ENDPOINT_SOLICITUDES_PATH || '/ate
 const ENDPOINT_MOTIVOS_RECHAZO_PATH = process.env.ENDPOINT_MOTIVOS_RECHAZO_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes/motivos-rechazo';
 const ENDPOINT_FUNCIONALIDADES_PATH = process.env.ENDPOINT_FUNCIONALIDADES_PATH || '/atencion-al-cliente/administracion-usuario/v2/funcionalidades';
 const ENDPOINT_BUSQUEDA_CONTRATOS_PATH = process.env.ENDPOINT_BUSQUEDA_CONTRATOS_PATH || '/core/company/v2/empresas/search';
+const ENDPOINT_DATOS_PERSONALES_PATH = process.env.ENDPOINT_DATOS_PERSONALES_PATH || '/atencion-al-cliente/clientes/v2/usuarios/datos-personales';
 
 //Contratos
 const CONTRATO_ACTIVO = process.env.CONTRATO_ACTIVO || '8064';
@@ -220,6 +221,48 @@ const endpoints = [
     "expectedStatus": [200]
   },
 //----------------------------------
+  {
+    "id": "Datos Personales - Usuario logueado ADMIN ART",
+    "description": "Consulta datos personales - Usuario logueado ADMIN ART",
+    "method": "GET",
+    "path": `${ENDPOINT_DATOS_PERSONALES_PATH}?idUsuario=${IDUSUARIO_ADMIN_ART}`,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_ART),
+        "contrato": Number(CONTRATO_ADMIN_ART),
+        "email": String(EMAIL_ADMIN_ART),
+        "cuit": String(CUIT_ADMIN_ART)
+      }
+    },
+    "expectedStatus": [200]
+  },
+  //----------------------------------
+    {
+    "id": "Datos Personales - Usuario logueado ADMIN WEB",
+    "description": "Consulta datos personales - Usuario logueado ADMIN WEB",
+    "method": "GET",
+    "path": `${ENDPOINT_DATOS_PERSONALES_PATH}?idUsuario=${IDUSUARIO_ADMIN_WEB}`,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_WEB),
+        "contrato": Number(CONTRATO_ADMIN_WEB),
+        "email": String(EMAIL_ADMIN_WEB),
+        "cuit": String(CUIT_ADMIN_WEB)
+      }
+    },
+    "expectedStatus": [200]
+  },
+  //---------------------------------------
   {
     "id": "SERVIDOR FEDE",
     "description": "Consulta solicitudes - Usuario logueado ADMIN WEB",
