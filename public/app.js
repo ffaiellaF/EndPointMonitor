@@ -55,6 +55,7 @@ function render(data){
     $('total').textContent = '—';
     $('up').textContent = '—';
     $('down').textContent = '—';
+    $('failedValidations').textContent = '—';
     $('lastRun').textContent = '—';
     $('nextRun').textContent = '';
     alarmPlayedFor.clear();
@@ -67,9 +68,11 @@ function render(data){
 
   const results = data.results || [];
   const downEndpoints = results.filter(x=>x.state==='DOWN');
+  const failedValidations = results.reduce((acc, r) => acc + (r.validations || []).filter(v => !v.passed).length, 0);
   $('total').textContent = results.length;
   $('up').textContent = results.filter(x=>x.state==='UP').length;
   $('down').textContent = downEndpoints.length;
+  $('failedValidations').textContent = failedValidations;
   if (alarmEnabled) {
     downEndpoints.forEach(ep => {
       if (!alarmPlayedFor.has(ep.id)) {
@@ -95,7 +98,9 @@ function render(data){
     const resHeaders = pretty(r.response?.headers || {});
     const reqBody = pretty(r.request?.body);
     const resBody = pretty(r.response?.body || 'Sin contenido');
-    return `<article class="endpoint"><div class="endpoint-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailsId}" onclick="toggleDetails('${detailsId}',this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetails('${detailsId}',this)}"><span class="method ${esc(r.method.toLowerCase())}">${esc(r.method)}</span><div class="summary"><strong>${esc(r.id)}</strong><code>${esc(r.url)}</code><div class="description">${esc(r.description)}</div></div><span class="pill ${r.state==='UP'?'up':'down'}">${r.state==='UP'?'OPERATIVO':'ERROR'}${r.status?` · ${r.status}`:''}</span><span class="timing">${r.durationMs} ms</span><span class="chevron">⌄</span></div><div class="details" id="${detailsId}" hidden><div class="detail-block full"><h3>URL completa de la petición</h3><div class="url">${esc(r.url)}</div></div><div class="detail-block request"><h3>Request · Headers</h3><pre>${esc(reqHeaders)}</pre></div><div class="detail-block request"><h3>Request · Body</h3><pre>${esc(reqBody)}</pre></div><div class="detail-block response"><h3>Response · Headers</h3><pre>${esc(resHeaders)}</pre></div><div class="detail-block response"><h3>Response · Body</h3><pre>${esc(resBody)}</pre></div>${r.error?`<div class="detail-block full"><h3>Error</h3><div class="error-text">${esc(r.error)}</div></div>`:''}<div class="detail-block full"><h3>Resultado</h3><div class="muted">Esperado: HTTP ${esc((r.expectedStatus||[]).join(', '))} · Recibido: ${esc(r.status ?? r.statusText)} · Tiempo: ${r.durationMs} ms · Fecha: ${esc(fmtDate(r.checkedAt))}</div></div></div></article>`;
+    const validations = r.validations || [];
+    const validationsHtml = validations.length ? `<div class="detail-block full"><h3>Validaciones de respuesta</h3><ul class="validations">${validations.map(v=>`<li class="${v.passed?'pass':'fail'}"><span class="validation-icon">${v.passed?'✓':'✗'}</span><div><strong>${esc(v.description)}</strong><div class="muted">${esc(v.message)}</div>${v.actual!==undefined?`<div class="muted">Valor actual: ${esc(pretty(v.actual))}</div>`:''}</div></li>`).join('')}</ul></div>` : '';
+    return `<article class="endpoint"><div class="endpoint-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailsId}" onclick="toggleDetails('${detailsId}',this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDetails('${detailsId}',this)}"><span class="method ${esc(r.method.toLowerCase())}">${esc(r.method)}</span><div class="summary"><strong>${esc(r.id)}</strong><code>${esc(r.url)}</code><div class="description">${esc(r.description)}</div></div><span class="pill ${r.state==='UP'?'up':'down'}">${r.state==='UP'?'OPERATIVO':'ERROR'}${r.status?` · ${r.status}`:''}</span>${validations.length?`<span class="validation-badge ${validations.every(v=>v.passed)?'pass':'fail'}">${validations.filter(v=>v.passed).length}/${validations.length} validaciones</span>`:''}<span class="timing">${r.durationMs} ms</span><span class="chevron">⌄</span></div><div class="details" id="${detailsId}" hidden><div class="detail-block full"><h3>URL completa de la petición</h3><div class="url">${esc(r.url)}</div></div><div class="detail-block request"><h3>Request · Headers</h3><pre>${esc(reqHeaders)}</pre></div><div class="detail-block request"><h3>Request · Body</h3><pre>${esc(reqBody)}</pre></div><div class="detail-block response"><h3>Response · Headers</h3><pre>${esc(resHeaders)}</pre></div><div class="detail-block response"><h3>Response · Body</h3><pre>${esc(resBody)}</pre></div>${r.error?`<div class="detail-block full"><h3>Error</h3><div class="error-text">${esc(r.error)}</div></div>`:''}${validationsHtml}<div class="detail-block full"><h3>Resultado</h3><div class="muted">Recibido: HTTP ${esc(r.status ?? r.statusText)} · Tiempo: ${r.durationMs} ms · Fecha: ${esc(fmtDate(r.checkedAt))}</div></div></div></article>`;
   }).join('');
   
   // Restaurar los detalles que estaban abiertos

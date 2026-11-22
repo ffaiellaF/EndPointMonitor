@@ -31,6 +31,9 @@ const ENDPOINT_DATOS_PERSONALES_PATH = process.env.ENDPOINT_DATOS_PERSONALES_PAT
 //Contratos
 const CONTRATO_ACTIVO = process.env.CONTRATO_ACTIVO || '8064';
 const CONTRATO_INACTIVO = process.env.CONTRATO_INACTIVO || '123471';
+
+const { estado200, noArrayVacio, campoPresente } = require('./validators');
+
 const endpoints = [
   {
     "id": "Consulta los cargos disponibles",
@@ -41,7 +44,7 @@ const endpoints = [
     "headers": {
       "Accept": "application/json"
     },
-    "expectedStatus": [200]
+    "validate": [estado200, noArrayVacio]
   },
   {
     "id": "Consulta las áreas disponibles",
@@ -52,7 +55,7 @@ const endpoints = [
     "headers": {
       "Accept": "application/json"
     },
-    "expectedStatus": [200]
+    "validate": [estado200, noArrayVacio]
   },
   {
     "id": "Consulta usuarios - Usuario logueado ADMIN ART",
@@ -73,7 +76,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta usuarios - Usuario logueado ADMIN WEB",
@@ -94,7 +97,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_WEB)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta solicitudes - Usuario logueado ADMIN ART",
@@ -115,7 +118,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta solicitudes - Usuario logueado ADMIN WEB",
@@ -136,7 +139,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_WEB)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta motivos de rechazo - Usuario logueado ADMIN ART",
@@ -156,7 +159,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta motivos de rechazo - Usuario logueado ADMIN WEB",
@@ -176,7 +179,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_WEB)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   {
     "id": "Consulta funcionalidades[Solapa Usuarios] - Usuario logueado ADMIN ART",
@@ -196,7 +199,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
 
   //----------------------------------
@@ -218,7 +221,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
 //----------------------------------
   {
@@ -239,7 +242,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_ART)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   //----------------------------------
     {
@@ -260,7 +263,7 @@ const endpoints = [
         "cuit": String(CUIT_ADMIN_WEB)
       }
     },
-    "expectedStatus": [200]
+    "validate": estado200
   },
   //---------------------------------------
   {
@@ -273,7 +276,7 @@ const endpoints = [
       "Accept": "application/json",
       "Consumidor": "CLIENTES"
     },
-    "expectedStatus": [200]
+    "validate": [estado200, campoPresente('hora')]
   }
 ];
 

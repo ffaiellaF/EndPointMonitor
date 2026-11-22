@@ -61,8 +61,10 @@ function loadEndpoints() {
       url,
       headers: expandEnv(ep.headers || {}),
       body: ep.body === undefined ? undefined : expandEnv(ep.body),
-      expectedStatus: Array.isArray(ep.expectedStatus) ? ep.expectedStatus.map(Number) : [Number(ep.expectedStatus || 200)],
-      auth: authConfig
+      auth: authConfig,
+      validate: Array.isArray(ep.validate)
+        ? ep.validate.filter(fn => typeof fn === 'function')
+        : (typeof ep.validate === 'function' ? ep.validate : null)
     };
   });
 }
@@ -135,12 +137,80 @@ async function getAuthToken(loginUrl, loginBody) {
 }
 
 async function readResponse(response) {
-  const text = await response.text();
-  if (!text) return { body: '', truncated: false };
+  const textoCrudo = await response.text();
+
+  if (!textoCrudo) {
+    return { bodyTexto: '', bodyJson: null, bodyCrudo: '', truncated: false };
+  }
+
   const max = 20000;
-  let body = text;
-  try { body = JSON.stringify(JSON.parse(text), null, 2); } catch (_) {}
-  return { body: body.length > max ? body.slice(0, max) + '\n… respuesta truncada …' : body, truncated: body.length > max };
+  let bodyTexto = textoCrudo;
+  let bodyJson = null;
+
+  try {
+    bodyJson = JSON.parse(textoCrudo);
+    bodyTexto = JSON.stringify(bodyJson, null, 2);
+  } catch (_) {
+    // Si la respuesta no es JSON, se mantiene el texto crudo como bodyTexto.
+  }
+
+  const truncated = bodyTexto.length > max;
+  if (truncated) bodyTexto = bodyTexto.slice(0, max) + '\n… respuesta truncada …';
+
+  return { bodyTexto, bodyJson, bodyCrudo: textoCrudo, truncated };
+}
+
+function normalizarResultadoDeValidacion(resultado, indice) {
+  const nombrePorDefecto = `Validación ${indice + 1}`;
+
+  if (resultado && typeof resultado === 'object' && 'valid' in resultado) {
+    return {
+      description: String(resultado.description || nombrePorDefecto),
+      passed: Boolean(resultado.valid),
+      message: String(resultado.message || (resultado.valid ? 'Validación correcta.' : 'Validación fallida.')),
+      actual: resultado.actual
+    };
+  }
+
+  if (typeof resultado === 'boolean') {
+    return {
+      description: nombrePorDefecto,
+      passed: resultado,
+      message: resultado ? 'Validación correcta.' : 'Validación fallida.',
+      actual: undefined
+    };
+  }
+
+  return {
+    description: nombrePorDefecto,
+    passed: false,
+    message: 'La función de validación no devolvió un resultado válido.',
+    actual: resultado
+  };
+}
+
+async function ejecutarValidaciones(funcionesDeValidacion, datosDeLaRespuesta) {
+  const funciones = Array.isArray(funcionesDeValidacion) ? funcionesDeValidacion : [funcionesDeValidacion];
+  const resultados = [];
+
+  for (const funcion of funciones) {
+    if (typeof funcion !== 'function') continue;
+
+    try {
+      const resultado = await funcion(datosDeLaRespuesta);
+      const listaDeResultados = Array.isArray(resultado) ? resultado : [resultado];
+      resultados.push(...listaDeResultados.map(normalizarResultadoDeValidacion));
+    } catch (error) {
+      resultados.push({
+        description: 'Error en la función de validación',
+        passed: false,
+        message: error.message,
+        actual: undefined
+      });
+    }
+  }
+
+  return resultados;
 }
 
 async function checkEndpoint(ep) {
@@ -163,7 +233,7 @@ async function checkEndpoint(ep) {
         ok: false, state: 'DOWN', durationMs: 0, checkedAt: new Date().toISOString(),
         error: `No se pudo obtener el token de autenticación desde ${ep.auth.loginUrl}. Verifique la configuración de auth en el endpoint.`,
         request: { headers: maskHeaders(requestHeaders), body: null },
-        response: { headers: {}, body: '' }, expectedStatus: ep.expectedStatus
+        response: { headers: {}, body: '' }, validations: []
       };
     }
   }
@@ -174,17 +244,41 @@ async function checkEndpoint(ep) {
     if (!Object.keys(requestHeaders).some(k => k.toLowerCase() === 'content-type')) requestHeaders['Content-Type'] = 'application/json';
   }
   try {
+    // 1. Hacer la petición HTTP al endpoint.
     const response = await fetch(ep.url, options);
+
+    // 2. Leer la respuesta y separar sus partes.
     const responseData = await readResponse(response);
+    const responseHeaders = Object.fromEntries(response.headers.entries());
+
+    // 3. Preparar los datos que recibirán las funciones de validación.
+    const datosDeLaRespuesta = {
+      statusCode: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+      bodyTexto: responseData.bodyTexto,
+      bodyJson: responseData.bodyJson,
+      bodyCrudo: responseData.bodyCrudo
+    };
+
+    // 4. Ejecutar las validaciones definidas para el endpoint.
+    const resultadosDeValidacion = await ejecutarValidaciones(ep.validate, datosDeLaRespuesta);
+
+    // 5. Determinar si el endpoint está OK.
+    const validacionesFallidas = resultadosDeValidacion.filter(v => !v.passed);
+    const validacionesOk = validacionesFallidas.length === 0;
+    const ok = validacionesOk;
+
     const durationMs = Date.now() - started;
-    const ok = ep.expectedStatus.includes(response.status);
+
     return {
       id: ep.id, description: ep.description, method: ep.method, url: ep.url,
       status: response.status, statusText: response.statusText, ok, state: ok ? 'UP' : 'DOWN',
       durationMs, checkedAt: new Date().toISOString(),
+      error: validacionesFallidas.length ? `Fallaron ${validacionesFallidas.length} validación(es) de respuesta.` : undefined,
       request: { headers: maskHeaders(requestHeaders), body: options.body || null },
-      response: { headers: Object.fromEntries(response.headers.entries()), body: responseData.body, truncated: responseData.truncated },
-      expectedStatus: ep.expectedStatus
+      response: { headers: responseHeaders, body: responseData.bodyTexto, truncated: responseData.truncated },
+      validations: resultadosDeValidacion
     };
   } catch (error) {
     const durationMs = Date.now() - started;
@@ -194,7 +288,7 @@ async function checkEndpoint(ep) {
       ok: false, state: 'DOWN', durationMs, checkedAt: new Date().toISOString(),
       error: error.name === 'AbortError' ? `La petición superó el timeout de ${TIMEOUT} ms.` : error.message,
       request: { headers: maskHeaders(requestHeaders), body: options.body || null },
-      response: { headers: {}, body: '' }, expectedStatus: ep.expectedStatus
+      response: { headers: {}, body: '' }, validations: []
     };
   } finally { clearTimeout(timeout); }
 }
