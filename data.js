@@ -25,7 +25,11 @@ const ENDPOINT_USUARIOS_PATH = process.env.ENDPOINT_USUARIOS_PATH || '/atencion-
 const ENDPOINT_SOLICITUDES_PATH = process.env.ENDPOINT_SOLICITUDES_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes';
 const ENDPOINT_MOTIVOS_RECHAZO_PATH = process.env.ENDPOINT_MOTIVOS_RECHAZO_PATH || '/atencion-al-cliente/administracion-usuario/v2/solicitudes/motivos-rechazo';
 const ENDPOINT_FUNCIONALIDADES_PATH = process.env.ENDPOINT_FUNCIONALIDADES_PATH || '/atencion-al-cliente/administracion-usuario/v2/funcionalidades';
+const ENDPOINT_BUSQUEDA_CONTRATOS_PATH = process.env.ENDPOINT_BUSQUEDA_CONTRATOS_PATH || '/core/company/v2/empresas/search';
 
+//Contratos
+const CONTRATO_ACTIVO = process.env.CONTRATO_ACTIVO || '8064';
+const CONTRATO_INACTIVO = process.env.CONTRATO_INACTIVO || '123471';
 const endpoints = [
   {
     "id": "Consulta los cargos disponibles",
@@ -193,6 +197,29 @@ const endpoints = [
     },
     "expectedStatus": [200]
   },
+
+  //----------------------------------
+  {
+    "id": "Búsqueda de contratos - Usuario logueado ADMIN ART",
+    "description": "Búsqueda de contratos en pantalla Selección de Cuenta - Usuario logueado ADMIN ART",
+    "method": "GET",
+    "path": `${ENDPOINT_BUSQUEDA_CONTRATOS_PATH}?q=${CONTRATO_ACTIVO}&pagina=1&limite=20&incluirInactivas=true`,
+    "useBaseUrl": true,
+    "headers": {
+      "Accept": "application/json",
+      "Consumidor": "CLIENTES"
+    },
+    "auth": {
+      "loginBody": {
+        "idUsuario": Number(IDUSUARIO_ADMIN_ART),
+        "contrato": Number(CONTRATO_ADMIN_ART),
+        "email": String(EMAIL_ADMIN_ART),
+        "cuit": String(CUIT_ADMIN_ART)
+      }
+    },
+    "expectedStatus": [200]
+  },
+//----------------------------------
   {
     "id": "SERVIDOR FEDE",
     "description": "Consulta solicitudes - Usuario logueado ADMIN WEB",
